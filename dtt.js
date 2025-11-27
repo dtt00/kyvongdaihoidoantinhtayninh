@@ -156,7 +156,7 @@ $(document).ready(function () {
                 const finalImgDataUrl = canvas.toDataURL("image/png", 1.0);
                 const link = document.createElement('a');
                 link.href = finalImgDataUrl;
-                link.download = 'DaiHoiDoanTNCSHCM.png'; 
+                link.download = 'Kyvongdaihoidoantinhtayninh.png'; 
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
