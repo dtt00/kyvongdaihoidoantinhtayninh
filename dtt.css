@@ -166,11 +166,11 @@ label span:before {
   width: 370px;
   height: 230px;
   font-family: "SVN Product Sans";
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.5;
   color: #005197;
   text-align: justify;
-  white-space: pre-wrap;
+  
 }
 
 .name,
@@ -195,7 +195,7 @@ label span:before {
   -webkit-line-clamp: 6;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  white-space: normal;
+  white-space: pre-wrap;
   text-overflow: ellipsis;
 }
 
@@ -335,6 +335,6 @@ label span:before {
     bottom: 22px;
     width: 162px;
     height: 100px;
-    font-size: 7px;
+    font-size: 8px;
   }
 }
