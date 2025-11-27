@@ -192,10 +192,11 @@ label span:before {
 
 .message {
   display: -webkit-box;
-  -webkit-line-clamp: 6;
+  -webkit-line-clamp: 10;
   -webkit-box-orient: vertical;
   overflow: hidden;
   white-space: normal;
+  text-overflow: ellipsis;
 }
 
 .loader-wrapper {
