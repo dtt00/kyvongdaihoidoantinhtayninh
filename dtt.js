@@ -1,19 +1,17 @@
 $(document).ready(function () {
     let cropper;
 
-    // --- Khai báo các biến ---
+    // --- 1. KHAI BÁO BIẾN ---
     const $imageChoose = $("#image-choose");
     const $imgChoosen = $("#img-choosen");
     const $cropperImage = $("#cropperImage");
     const $cropperModal = $("#cropperModal");
     const $saveCroppedImage = $("#saveCroppedImage");
     const $closeModal = $(".close");
-
-    // Các biến cho Modal kết quả
     const $resultModal = $("#resultModal");
     const $closeResultBtn = $("#closeResultBtn");
 
-    // --- Hàm reset input file ---
+    // --- 2. HÀM HỖ TRỢ ---
     function resetInput() {
         $imageChoose.val("");
         if (cropper) {
@@ -22,7 +20,7 @@ $(document).ready(function () {
         }
     }
 
-    // --- 1. Xử lý chọn và crop ảnh ---
+    // --- 3. XỬ LÝ CROP ẢNH (GIỮ NGUYÊN LOGIC CŨ) ---
     $imageChoose.on("change", function () {
         const files = this.files;
         if (files.length > 0) {
@@ -51,11 +49,10 @@ $(document).ready(function () {
         }
     });
 
-    // Lưu ảnh crop
     $saveCroppedImage.on("click", function () {
         if (cropper) {
             const canvas = cropper.getCroppedCanvas({
-                width: 1200, // Tăng chất lượng ảnh avatar lên chút
+                width: 1200, 
                 height: 1200,
                 imageSmoothingEnabled: true,
                 imageSmoothingQuality: 'high',
@@ -65,13 +62,11 @@ $(document).ready(function () {
                 const base64encodedImage = canvas.toDataURL("image/jpeg", 0.95);
                 $imgChoosen.attr("src", base64encodedImage);
             }
-            
             $cropperModal.fadeOut();
             resetInput();
         }
     });
 
-    // Đóng modal crop
     $closeModal.on("click", function () {
         $cropperModal.fadeOut();
         resetInput();
@@ -84,21 +79,18 @@ $(document).ready(function () {
         }
     });
 
-    // --- 2. Cập nhật nội dung text ---
+    // --- 4. CẬP NHẬT TEXT ---
     $("#name").on("input", function () {
         $(".name-content").text($(this).val());
     });
     $("#title").on("input", function () {
         $(".title-content").text($(this).val());
     });
-    // Sử dụng val() thay vì text() nếu input là textarea, 
-    // và gán vào div hiển thị (nếu bạn dùng div để hiển thị chữ trên ảnh)
     $("#message").on("input", function () {
         $(".message-content").text($(this).val());
     });
 
-
-    // --- 3. XUẤT ẢNH VÀ TỰ ĐỘNG TẢI XUỐNG (ĐÃ SỬA LỖI NHẢY CHỮ) ---
+    // --- 5. XỬ LÝ TẢI ẢNH (PHẦN ĐÃ SỬA LỖI) ---
     $("#submit").click(function () {
         const $btn = $(this);
         const originalText = $btn.text();
@@ -111,63 +103,52 @@ $(document).ready(function () {
         }
 
         const node = document.getElementById("frame-wrapper");
-
-        // --- CẤU HÌNH FIX LỖI ---
-        // Lấy kích thước thực tế của phần tử
         const width = node.scrollWidth;
         const height = node.scrollHeight;
-        
-        // Thiết lập scale cố định (3 là đủ nét cho in ấn cơ bản/mạng xã hội)
-        // Đừng dùng dynamicScale dựa trên màn hình mobile, nó sẽ gây vỡ layout
-        const scale = 3; 
 
+        // Cấu hình html2canvas
         html2canvas(node, {
             width: width,
             height: height,
-            scale: scale,
+            scale: 3, // Độ nét cao
             useCORS: true,
             allowTaint: true,
-            backgroundColor: null, // Để nền trong suốt nếu CSS không đặt màu
+            backgroundColor: null,
+            scrollY: -window.scrollY, // Fix lỗi lệch khi cuộn trang
             
-            // --- FIX LỖI QUAN TRỌNG NHẤT: SCROLL ---
-            // Dòng này giúp html2canvas không bị lệch khi người dùng đã cuộn trang
-            scrollY: -window.scrollY, 
-            scrollX: 0,
-            windowWidth: document.documentElement.offsetWidth,
-            windowHeight: document.documentElement.offsetHeight,
-
+            // --- KỸ THUẬT FIX VỊ TRÍ CHỮ ---
             onclone: (clonedDoc) => {
                 const clonedNode = clonedDoc.getElementById("frame-wrapper");
-                
-                // Đảm bảo node copy hiển thị đầy đủ, không bị hidden
                 clonedNode.style.display = "block";
                 
-                // Tìm các phần tử text để cố định style
+                // Chọn tất cả các thẻ chữ cần sửa
                 const textElements = clonedNode.querySelectorAll('.name-content, .title-content, .message-content');
                 
                 textElements.forEach(el => {
-                    // 1. Reset transform: Xóa bỏ mọi dịch chuyển cũ gây lỗi
-                    el.style.transform = "none"; 
-                    el.style.margin = "0"; 
+                    // 1. Reset các transform cũ
+                    el.style.transform = "none";
+                    el.style.margin = "0";
                     
-                    // 2. Cố định line-height: Giúp chữ không bị nhảy dòng
-                    el.style.lineHeight = "1.2"; 
+                    // 2. Ép dòng không bị giãn
+                    el.style.lineHeight = "1.2";
                     
-                    // 3. Ép font-family: Đảm bảo không bị lỗi font fallback
+                    // 3. Ép font hiển thị đúng
                     const computedStyle = window.getComputedStyle(el);
                     el.style.fontFamily = computedStyle.fontFamily;
-                    el.style.fontSize = computedStyle.fontSize; // Giữ nguyên size gốc (sẽ được nhân với scale tự động)
+                    el.style.fontSize = computedStyle.fontSize;
                     el.style.fontWeight = computedStyle.fontWeight;
+                    el.style.webkitTextSizeAdjust = "100%";
 
-                    // 4. Fix lỗi cho iPhone/Safari (Text size adjust)
-                    el.style.webkitTextSizeAdjust = "100%"; 
+                    // 4. THỦ THUẬT: Đẩy chữ xuống 10px để bù trừ lỗi bị nhảy lên
+                    // Nếu bạn thấy chữ vẫn cao -> Tăng số này lên (ví dụ "15px")
+                    // Nếu bạn thấy chữ bị thấp quá -> Giảm số này xuống (ví dụ "5px")
+                    el.style.marginTop = "10px"; 
+                    el.style.display = "block"; // Đảm bảo nhận margin
                 });
-                
-                // Fix lỗi ảnh avatar bị mờ hoặc lệch (nếu có)
+
+                // Fix ảnh avatar (nếu cần)
                 const img = clonedNode.querySelector('#img-choosen');
-                if(img) {
-                    img.style.transform = "none";
-                }
+                if(img) img.style.transform = "none";
             }
         }).then(canvas => {
             // Tải xuống
@@ -181,10 +162,10 @@ $(document).ready(function () {
                 document.body.removeChild(link);
             } catch (e) {
                 console.error("Lỗi download:", e);
-                alert("Không thể tải ảnh. Hãy thử nhấn giữ vào ảnh để lưu thủ công (nếu dùng điện thoại).");
+                alert("Lỗi tải ảnh. Hãy thử nhấn giữ ảnh để lưu thủ công.");
             }
 
-            // Ẩn loading
+            // Tắt loading
             if($(".loader-wrapper").length) {
                 $(".loader-wrapper").fadeOut();
             } else {
@@ -202,7 +183,7 @@ $(document).ready(function () {
         });
     });
 
-    // Đóng Modal Kết quả (nếu dùng sau này)
+    // Các sự kiện đóng modal khác
     $closeResultBtn.on("click", function() {
         $resultModal.fadeOut();
     });
