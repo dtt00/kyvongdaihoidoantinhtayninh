@@ -142,7 +142,7 @@ $(document).ready(function () {
                     // 4. THỦ THUẬT: Đẩy chữ xuống 10px để bù trừ lỗi bị nhảy lên
                     // Nếu bạn thấy chữ vẫn cao -> Tăng số này lên (ví dụ "15px")
                     // Nếu bạn thấy chữ bị thấp quá -> Giảm số này xuống (ví dụ "5px")
-                    el.style.marginTop = "10px"; 
+                    el.style.marginTop = "5px"; 
                     el.style.display = "block"; // Đảm bảo nhận margin
                 });
 
