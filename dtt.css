@@ -178,7 +178,7 @@ label span:before {
 .message {
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: pre-line;
 }
 
 .title {
@@ -195,7 +195,7 @@ label span:before {
   -webkit-line-clamp: 10;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  white-space: normal;
+  white-space: pre-line;
   text-overflow: ellipsis;
 }
 
