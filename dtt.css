@@ -195,7 +195,7 @@ label span:before {
   -webkit-line-clamp: 6;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  white-space: pre-wrap;
+  white-space: normal;
   text-overflow: ellipsis;
 }
 
