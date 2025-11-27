@@ -110,7 +110,7 @@ $(document).ready(function () {
         html2canvas(node, {
             width: width,
             height: height,
-            scale: 3, // Độ nét cao
+            scale: 6, // Độ nét cao
             useCORS: true,
             allowTaint: true,
             backgroundColor: null,
