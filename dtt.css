@@ -170,6 +170,7 @@ label span:before {
   line-height: 1.5;
   color: #005197;
   text-align: justify;
+  white-space: pre-wrap;
 }
 
 .name,
