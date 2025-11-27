@@ -196,7 +196,6 @@ label span:before {
   -webkit-box-orient: vertical;
   overflow: hidden;
   white-space: normal;
-  text-overflow: ellipsis;
 }
 
 .loader-wrapper {
