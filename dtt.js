@@ -9,13 +9,11 @@ $(document).ready(function () {
     const $saveCroppedImage = $("#saveCroppedImage");
     const $closeModal = $(".close");
 
-    // Các biến cho Modal kết quả mới
+    // Các biến cho Modal kết quả
     const $resultModal = $("#resultModal");
-    const $finalImage = $("#finalImage");
     const $closeResultBtn = $("#closeResultBtn");
-    const $downloadBtnDesktop = $("#downloadBtnDesktop");
 
-    // Hàm reset input file
+    // --- Hàm reset input file ---
     function resetInput() {
         $imageChoose.val("");
         if (cropper) {
@@ -29,7 +27,6 @@ $(document).ready(function () {
         const files = this.files;
         if (files.length > 0) {
             const file = files[0];
-            // Kiểm tra loại file
             if (!file.type.startsWith('image/')) {
                 alert('Vui lòng chỉ chọn file ảnh!');
                 return;
@@ -39,10 +36,10 @@ $(document).ready(function () {
                 $cropperImage.attr("src", event.target.result);
                 $cropperModal.fadeIn();
                 if (cropper) cropper.destroy();
-                // Cấu hình cropper
+                
                 cropper = new Cropper($cropperImage[0], {
-                    aspectRatio: 1, // Khung vuông
-                    viewMode: 1,    // Giới hạn khung crop trong ảnh
+                    aspectRatio: 1, 
+                    viewMode: 1,    
                     autoCropArea: 0.9,
                     movable: true,
                     zoomable: true,
@@ -57,17 +54,15 @@ $(document).ready(function () {
     // Lưu ảnh crop
     $saveCroppedImage.on("click", function () {
         if (cropper) {
-            // QUAN TRỌNG: Giới hạn kích thước ảnh sau khi crop để tránh bị nặng
-            // Nếu ảnh gốc 5000x5000, nó sẽ resize về 800x800 để ghép vào khung cho nhẹ.
             const canvas = cropper.getCroppedCanvas({
-                width: 800,
-                height: 800,
+                width: 1200, // Tăng chất lượng ảnh avatar lên chút
+                height: 1200,
                 imageSmoothingEnabled: true,
                 imageSmoothingQuality: 'high',
             });
             
             if(canvas) {
-                const base64encodedImage = canvas.toDataURL("image/jpeg", 0.9);
+                const base64encodedImage = canvas.toDataURL("image/jpeg", 0.95);
                 $imgChoosen.attr("src", base64encodedImage);
             }
             
@@ -96,18 +91,19 @@ $(document).ready(function () {
     $("#title").on("input", function () {
         $(".title-content").text($(this).val());
     });
+    // Sử dụng val() thay vì text() nếu input là textarea, 
+    // và gán vào div hiển thị (nếu bạn dùng div để hiển thị chữ trên ảnh)
     $("#message").on("input", function () {
         $(".message-content").text($(this).val());
     });
 
 
-   // --- 3. XUẤT ẢNH VÀ TỰ ĐỘNG TẢI XUỐNG (KHÔNG HIỆN MODAL) ---
+    // --- 3. XUẤT ẢNH VÀ TỰ ĐỘNG TẢI XUỐNG (ĐÃ SỬA LỖI NHẢY CHỮ) ---
     $("#submit").click(function () {
-        // 1. Hiển thị thông báo đang xử lý
-        // Vì không hiện Modal kết quả nên cần có cái gì đó báo user biết là đang chạy
         const $btn = $(this);
         const originalText = $btn.text();
         
+        // Hiển thị loading
         if($(".loader-wrapper").length) {
             $(".loader-wrapper").fadeIn();
         } else {
@@ -116,58 +112,79 @@ $(document).ready(function () {
 
         const node = document.getElementById("frame-wrapper");
 
-        // 2. Tính toán Scale (Để ảnh nét)
-        const desiredWidth = 2000; 
-        const currentWidth = node.offsetWidth;
-        let dynamicScale = desiredWidth / currentWidth;
-        if (dynamicScale < 2) dynamicScale = 2;
-
-        // 3. Kiểm tra thiết bị & Cấu hình độ lệch (Giữ nguyên logic cũ của bạn)
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
-        // --- CHỈNH ĐỘ LỆCH Ở ĐÂY ---
-        const offsetPC = "-20px";      // PC: Kéo lên 20px
-        const offsetMobile = "-10px";  // Mobile: Kéo lên 10px
-        const finalOffset = isMobile ? offsetMobile : offsetPC;
+        // --- CẤU HÌNH FIX LỖI ---
+        // Lấy kích thước thực tế của phần tử
+        const width = node.scrollWidth;
+        const height = node.scrollHeight;
+        
+        // Thiết lập scale cố định (3 là đủ nét cho in ấn cơ bản/mạng xã hội)
+        // Đừng dùng dynamicScale dựa trên màn hình mobile, nó sẽ gây vỡ layout
+        const scale = 3; 
 
         html2canvas(node, {
-            scale: dynamicScale,
+            width: width,
+            height: height,
+            scale: scale,
             useCORS: true,
             allowTaint: true,
-            backgroundColor: null,
-            logging: false,
-            // Kỹ thuật sửa vị trí chữ
+            backgroundColor: null, // Để nền trong suốt nếu CSS không đặt màu
+            
+            // --- FIX LỖI QUAN TRỌNG NHẤT: SCROLL ---
+            // Dòng này giúp html2canvas không bị lệch khi người dùng đã cuộn trang
+            scrollY: -window.scrollY, 
+            scrollX: 0,
+            windowWidth: document.documentElement.offsetWidth,
+            windowHeight: document.documentElement.offsetHeight,
+
             onclone: (clonedDoc) => {
-                const textElements = clonedDoc.querySelectorAll('.name-content, .title-content, .message-content');
+                const clonedNode = clonedDoc.getElementById("frame-wrapper");
+                
+                // Đảm bảo node copy hiển thị đầy đủ, không bị hidden
+                clonedNode.style.display = "block";
+                
+                // Tìm các phần tử text để cố định style
+                const textElements = clonedNode.querySelectorAll('.name-content, .title-content, .message-content');
+                
                 textElements.forEach(el => {
-                    // Tắt tự phóng to chữ của iPhone
-                    el.style.webkitTextSizeAdjust = "100%"; 
-                    
-                    // Reset thuộc tính
-                    el.style.lineHeight = "1.2"; 
-                    el.style.display = "inline-block"; 
-                    el.style.position = "relative";
+                    // 1. Reset transform: Xóa bỏ mọi dịch chuyển cũ gây lỗi
+                    el.style.transform = "none"; 
                     el.style.margin = "0"; 
                     
-                    // Áp dụng độ lệch
-                    el.style.transform = `translateY(${finalOffset})`;
-                    el.style.fontFamily = getComputedStyle(el).fontFamily;
+                    // 2. Cố định line-height: Giúp chữ không bị nhảy dòng
+                    el.style.lineHeight = "1.2"; 
+                    
+                    // 3. Ép font-family: Đảm bảo không bị lỗi font fallback
+                    const computedStyle = window.getComputedStyle(el);
+                    el.style.fontFamily = computedStyle.fontFamily;
+                    el.style.fontSize = computedStyle.fontSize; // Giữ nguyên size gốc (sẽ được nhân với scale tự động)
+                    el.style.fontWeight = computedStyle.fontWeight;
+
+                    // 4. Fix lỗi cho iPhone/Safari (Text size adjust)
+                    el.style.webkitTextSizeAdjust = "100%"; 
                 });
+                
+                // Fix lỗi ảnh avatar bị mờ hoặc lệch (nếu có)
+                const img = clonedNode.querySelector('#img-choosen');
+                if(img) {
+                    img.style.transform = "none";
+                }
             }
         }).then(canvas => {
-            // 4. Xử lý Tải Xuống Ngay Lập Tức
-            const finalImgDataUrl = canvas.toDataURL("image/png", 1.0);
+            // Tải xuống
+            try {
+                const finalImgDataUrl = canvas.toDataURL("image/png", 1.0);
+                const link = document.createElement('a');
+                link.href = finalImgDataUrl;
+                link.download = 'DaiHoiDoanTNCSHCM.png'; 
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (e) {
+                console.error("Lỗi download:", e);
+                alert("Không thể tải ảnh. Hãy thử nhấn giữ vào ảnh để lưu thủ công (nếu dùng điện thoại).");
+            }
 
-            // Tạo một thẻ A ảo để kích hoạt tải xuống
-            const link = document.createElement('a');
-            link.href = finalImgDataUrl;
-            link.download = 'Kyvongdaihoi.png'; // Tên file khi tải về
-            document.body.appendChild(link);
-            link.click(); // Kích hoạt click
-            document.body.removeChild(link); // Xóa thẻ A sau khi click
-
-            // 5. Kết thúc, ẩn loading
+            // Ẩn loading
             if($(".loader-wrapper").length) {
                 $(".loader-wrapper").fadeOut();
             } else {
@@ -175,7 +192,7 @@ $(document).ready(function () {
             }
 
         }).catch(err => {
-            console.error("Lỗi:", err);
+            console.error("Lỗi html2canvas:", err);
             alert("Có lỗi khi tạo ảnh. Vui lòng thử lại!");
             if($(".loader-wrapper").length) {
                 $(".loader-wrapper").fadeOut();
@@ -184,12 +201,12 @@ $(document).ready(function () {
             }
         });
     });
-    // Đóng Modal Kết quả khi bấm nút Đóng
+
+    // Đóng Modal Kết quả (nếu dùng sau này)
     $closeResultBtn.on("click", function() {
         $resultModal.fadeOut();
     });
     
-    // Đóng Modal Kết quả khi bấm ra ngoài
     $(window).on("click", function (event) {
         if (event.target === $resultModal[0]) {
             $resultModal.fadeOut();
