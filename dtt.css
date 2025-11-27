@@ -162,8 +162,8 @@ label span:before {
 .message {
   position: absolute;
   left: 360px;
-  bottom: 50px;
-  width: 370px;
+  bottom: 5px;
+  width: 365px;
   height: 270px;
   font-family: "SVN Product Sans";
   font-size: 14px;
