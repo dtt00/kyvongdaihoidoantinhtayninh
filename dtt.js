@@ -90,13 +90,13 @@ $(document).ready(function () {
         $(".message-content").text($(this).val());
     });
 
-    // --- 5. XỬ LÝ TẢI ẢNH (PHẦN ĐÃ SỬA LỖI) ---
+    // --- 5. XỬ LÝ TẢI ẢNH (ĐÃ FIX CHO ZALO/FB) ---
     $("#submit").click(function () {
         const $btn = $(this);
         const originalText = $btn.text();
-        
-        // Hiển thị loading
-        if($(".loader-wrapper").length) {
+
+        // 1. Hiển thị loading
+        if ($(".loader-wrapper").length) {
             $(".loader-wrapper").fadeIn();
         } else {
             $btn.text("Đang tạo ảnh...").prop("disabled", true);
@@ -106,67 +106,79 @@ $(document).ready(function () {
         const width = node.scrollWidth;
         const height = node.scrollHeight;
 
-        // Cấu hình html2canvas
+        // 2. Chạy html2canvas
         html2canvas(node, {
             width: width,
             height: height,
-            scale: 6, // Độ nét cao
+            scale: 4, // Giảm scale xuống 3-4 để nhẹ máy mobile, tránh crash Zalo
             useCORS: true,
             allowTaint: true,
             backgroundColor: null,
-            scrollY: -window.scrollY, // Fix lỗi lệch khi cuộn trang
-            
-            // --- KỸ THUẬT FIX VỊ TRÍ CHỮ ---
+            scrollY: -window.scrollY,
             onclone: (clonedDoc) => {
                 const clonedNode = clonedDoc.getElementById("frame-wrapper");
                 clonedNode.style.display = "block";
                 
-                // Chọn tất cả các thẻ chữ cần sửa
+                // Fix lỗi chữ như code cũ
                 const textElements = clonedNode.querySelectorAll('.name-content, .title-content, .message-content');
-                
                 textElements.forEach(el => {
-                    // 1. Reset các transform cũ
                     el.style.transform = "none";
                     el.style.margin = "0";
-                    
-                    // 2. Ép dòng không bị giãn
                     el.style.lineHeight = "1.2";
-                    
-                    // 3. Ép font hiển thị đúng
                     const computedStyle = window.getComputedStyle(el);
                     el.style.fontFamily = computedStyle.fontFamily;
                     el.style.fontSize = computedStyle.fontSize;
                     el.style.fontWeight = computedStyle.fontWeight;
-                    el.style.webkitTextSizeAdjust = "100%";
-
-                    // 4. THỦ THUẬT: Đẩy chữ xuống 10px để bù trừ lỗi bị nhảy lên
-                    // Nếu bạn thấy chữ vẫn cao -> Tăng số này lên (ví dụ "15px")
-                    // Nếu bạn thấy chữ bị thấp quá -> Giảm số này xuống (ví dụ "5px")
                     el.style.marginTop = "-5px"; 
-                    el.style.display = "block"; // Đảm bảo nhận margin
+                    el.style.display = "block";
                 });
 
-                // Fix ảnh avatar (nếu cần)
+                // Fix ảnh avatar
                 const img = clonedNode.querySelector('#img-choosen');
                 if(img) img.style.transform = "none";
             }
         }).then(canvas => {
-            // Tải xuống
-            try {
-                const finalImgDataUrl = canvas.toDataURL("image/png", 1.0);
-                const link = document.createElement('a');
-                link.href = finalImgDataUrl;
-                link.download = 'Kyvongdaihoidoantinhtayninh.png'; 
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            } catch (e) {
-                console.error("Lỗi download:", e);
-                alert("Lỗi tải ảnh. Hãy thử nhấn giữ ảnh để lưu thủ công.");
+            // 3. Xử lý kết quả sau khi chụp xong
+            const finalImgDataUrl = canvas.toDataURL("image/png", 1.0);
+
+            // Kiểm tra xem trình duyệt có phải là Mobile hoặc nằm trong App (Zalo, FB) không
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Zalo|FBAN|FBAV/i.test(navigator.userAgent);
+
+            if (isMobile) {
+                // --- LOGIC CHO ĐIỆN THOẠI / ZALO / FB ---
+                // Thay vì tải xuống (sẽ lỗi), ta hiển thị ảnh vào Modal để khách nhấn giữ lưu
+                
+                // Tìm thẻ img trong resultModal để gán ảnh (Nếu HTML chưa có thì bạn cần thêm)
+                let $resultImg = $("#result-img-show");
+                
+                // Nếu chưa có thẻ img trong HTML, tạo động luôn
+                if ($resultImg.length === 0) {
+                    $resultModal.find(".modal-content").append('<img id="result-img-show" src="" style="width:100%; display:block; margin-bottom:10px; border-radius:10px;">');
+                    $resultImg = $("#result-img-show");
+                    // Thêm dòng hướng dẫn
+                     $resultModal.find(".modal-content").append('<p style="text-align:center; color: red; font-weight:bold;">Nhấn giữ vào ảnh trên để Lưu về máy</p>');
+                }
+
+                $resultImg.attr("src", finalImgDataUrl);
+                $resultModal.fadeIn(); // Hiện modal kết quả
+                
+            } else {
+                // --- LOGIC CHO MÁY TÍNH (PC) ---
+                // Tải xuống tự động như bình thường
+                try {
+                    const link = document.createElement('a');
+                    link.href = finalImgDataUrl;
+                    link.download = 'Kyvongdaihoidoantinhtayninh.png'; 
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } catch (e) {
+                    console.error("Lỗi download PC:", e);
+                }
             }
 
-            // Tắt loading
-            if($(".loader-wrapper").length) {
+            // 4. Tắt loading
+            if ($(".loader-wrapper").length) {
                 $(".loader-wrapper").fadeOut();
             } else {
                 $btn.text(originalText).prop("disabled", false);
@@ -175,7 +187,7 @@ $(document).ready(function () {
         }).catch(err => {
             console.error("Lỗi html2canvas:", err);
             alert("Có lỗi khi tạo ảnh. Vui lòng thử lại!");
-            if($(".loader-wrapper").length) {
+            if ($(".loader-wrapper").length) {
                 $(".loader-wrapper").fadeOut();
             } else {
                 $btn.text(originalText).prop("disabled", false);
